@@ -165,6 +165,12 @@ curl http://127.0.0.1:8083/v1/chat/completions \
 - 账号额度、IP 限流、封号风险由上游决定，本项目不提供绕过
 - 请只使用自己的账号，并遵守各平台服务条款
 
+### 请求体过大
+
+- Gemini：上下文超过 128 KB 时，文本模型会转成附件；图片模型会改为只取最后一条用户消息，最后一条本身也超限则返回 400
+- ChatGPT：上游会直接返回 `413 Payload Too Large`，需要客户端精简历史消息
+- 生图建议调用 `/v1/images/generations`，只传 `prompt`，不要带整段对话历史
+
 ## 上游与许可
 
 - [zexadev/gemini-web2api-go](https://github.com/zexadev/gemini-web2api-go) — MIT

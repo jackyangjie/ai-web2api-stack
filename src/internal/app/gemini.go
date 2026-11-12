@@ -600,6 +600,17 @@ func streamGenerateOnce(prompt, latest string, mc ModelConfig, pending []pending
 	// prompt 超长时转成文本附件。要等挑完号和出口才能做：上传要 cookie，
 	// 而且必须走跟正式请求同一个出口。
 	budget := rtCfg().MaxPromptBytes
+	// 图片模型不能走“超长转附件”那条路：附件里的文字不会参与绘图，
+	// 上游会正常生成但响应里没有图片 CDN 链接，最后只能报 502。
+	// 历史很长时只取最后一条用户消息；它本身也超长就直接 400。
+	if mc.Tool == toolImage && budget > 0 && len(prompt) > budget {
+		if latest != "" && len(latest) <= budget {
+			logf("[context] 图片模型 prompt %d 字节超限，改用最新用户消息 %d 字节", len(prompt), len(latest))
+			prompt = latest
+		} else {
+			return attrib(&PromptTooLongError{Bytes: len(prompt), Budget: budget, HasCookie: cookieStr != ""})
+		}
+	}
 	if p, f, used, ferr := prepareContextFile(prompt, latest, budget, cookieStr, authUser, proxyURL); ferr != nil {
 		return attrib(ferr)
 	} else if used {
