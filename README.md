@@ -7,6 +7,7 @@
 | `gemini-web2api` | 8083 | gemini.google.com | 文本 / 生图 / 视频，额外提供 `/v1/images/generations` |
 | `chatgpt2api` | 3000 | chatgpt.com | 文本 / 图片，账号用 access_token |
 | `deepseek-web2api` | 8090 | chat.deepseek.com | 文本，账号用 token + cookies |
+| `new-api` | 3010 | 上面三个服务 | 统一入口、Key、用量统计、渠道重试 |
 
 三个服务都使用 `network_mode: host`，方便访问只监听 `127.0.0.1` 的本地代理。
 
@@ -52,6 +53,35 @@ cp chatgpt2api/config.example.json chatgpt2api/config.json
 ```
 
 如果不需要 Gemini 代理，删除 `docker-compose.yml` 中 `--proxy` 及其下一行。
+
+## 网关（3010）
+
+new-api 把三个服务聚合成一个入口：
+
+- 面板：`http://127.0.0.1:3010/`
+- 首次启动通过 `/setup` 初始化管理员，用户名和密码来自 `.env` 的 `NEWAPI_ADMIN_PASSWORD`
+- 统一调用地址：`http://127.0.0.1:3010/v1`
+- 在面板「令牌」页创建统一 Key，客户端只配这一个 Key
+
+已配置的渠道：
+
+| 渠道 | Base URL | 模型示例 |
+|---|---|---|
+| gemini-web2api | `http://127.0.0.1:8083` | `gemini-3.6-flash`、`gemini-image` |
+| chatgpt2api | `http://127.0.0.1:3000` | `gpt-6-mini`、`gpt-image-2` |
+| deepseek-web2api | `http://127.0.0.1:8090` | `deepseek-chat` |
+
+实测以下接口都能经网关透传：
+
+- `/v1/chat/completions`：三家文本
+- `/v1/images/generations`：`gemini-image` 和 `gpt-image-2`
+
+说明：
+
+- 模型名保持上游原名，不做跨服务同名映射
+- 同一渠道失败会自动重试；跨渠道切换需要给同一个模型配置多个渠道
+- 图片的额度统计按上游返回的 usage 估算，不等同于真实张数
+- new-api 是 AGPL-3.0，仅作为独立容器运行
 
 ## Gemini（8083）
 
