@@ -1,0 +1,64 @@
+services:
+  gemini-web2api:
+    image: gemini-web2api:local
+    build:
+      context: ./src
+      dockerfile: Dockerfile.local
+    container_name: gemini-web2api
+    restart: unless-stopped
+    # host 网络：本机代理只监听 127.0.0.1，容器走 bridge 够不到
+    network_mode: host
+    env_file: .env
+    volumes:
+      - ./data:/data
+      - ./cookie.txt:/config/cookie.txt:ro
+    command:
+      - --port
+      - "8083"
+      - --db
+      - /data/gemini.db
+      - --proxy
+      - ${GEMINI_PROXY:-http://127.0.0.1:5080}
+      - --cookie-file
+      - /config/cookie.txt
+
+  chatgpt2api:
+    image: ghcr.io/basketikun/chatgpt2api:latest
+    container_name: chatgpt2api
+    restart: unless-stopped
+    # 同样用 host 网络，才能访问只监听 127.0.0.1 的本地代理
+    network_mode: host
+    command:
+      - uv
+      - run
+      - uvicorn
+      - main:app
+      - --host
+      - 0.0.0.0
+      - --port
+      - "3000"
+      - --access-log
+    volumes:
+      - ./chatgpt2api/data:/app/data
+      - ./chatgpt2api/config.json:/app/config.json
+    environment:
+      - STORAGE_BACKEND=json
+      - CHATGPT2API_AUTH_KEY=${CHATGPT2API_AUTH_KEY}
+
+  deepseek-web2api:
+    build:
+      context: ./deepseek
+      dockerfile: Dockerfile.local
+    container_name: deepseek-web2api
+    restart: unless-stopped
+    # 直连 chat.deepseek.com 即可，不走 5080
+    network_mode: host
+    environment:
+      - HOST=0.0.0.0
+      - PORT=8090
+      - DEEPSEEK_ADMIN_PASSWORD=${DS_ADMIN_PASSWORD}
+      - API_KEYS=${DS_API_KEY}
+      - ACCOUNT_STORE_PATH=data/accounts.json
+      - ALLOW_UNAUTHENTICATED_API=false
+    volumes:
+      - ./deepseek/data:/app/data

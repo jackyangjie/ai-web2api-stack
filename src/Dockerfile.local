@@ -1,0 +1,3 @@
+# 本地改动版：沿用官方镜像的运行层，只替换主程序
+FROM ghcr.io/zexadev/gemini-web2api-go:latest
+COPY gemini-web2api /app/gemini-web2api
