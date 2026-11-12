@@ -1,0 +1,7 @@
+SID=替换为浏览器 Cookie 中的 SID
+HSID=替换为浏览器 Cookie 中的 HSID
+SSID=替换为浏览器 Cookie 中的 SSID
+APISID=替换为浏览器 Cookie 中的 APISID
+SAPISID=替换为浏览器 Cookie 中的 SAPISID
+__Secure-1PSID=替换为浏览器 Cookie 中的 __Secure-1PSID
+__Secure-1PSIDTS=替换为浏览器 Cookie 中的 __Secure-1PSIDTS
